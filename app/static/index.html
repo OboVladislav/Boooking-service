@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Service</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="page-shell">
+    <section class="landing-view" id="landingView">
+        <header class="landing-hero">
+            <div class="hero-copy">
+                <p class="eyebrow">Booking Service</p>
+                <h1>Выберите действие и войдите в систему бронирования.</h1>
+                <p class="hero-text">
+                    На главной странице доступны два сценария: регистрация нового пользователя и вход
+                    в существующий аккаунт. После входа откроется личный кабинет с функционалом по роли.
+                </p>
+            </div>
+            <div class="hero-actions">
+                <button id="openRegisterModalButton" type="button">Зарегистрироваться</button>
+                <button class="ghost-button" id="openLoginModalButton" type="button">Войти</button>
+            </div>
+        </header>
+    </section>
+
+    <section class="cabinet-view hidden" id="cabinetView">
+        <header class="cabinet-hero">
+            <div>
+                <p class="eyebrow">Личный кабинет</p>
+                <h1 id="cabinetTitle">Кабинет пользователя</h1>
+                <p class="hero-text" id="cabinetSubtitle"></p>
+            </div>
+            <div class="session-card">
+                <div class="session-state" id="sessionState"></div>
+                <div class="session-meta" id="sessionMeta"></div>
+                <button class="ghost-button" id="logoutButton" type="button">Выйти</button>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <section class="panel role-panel client-only">
+                <div class="panel-heading">
+                    <h2>Поиск комнат</h2>
+                    <p>Фильтрация по вместимости, локации и временному окну.</p>
+                </div>
+                <form id="filtersForm" class="grid-form">
+                    <label>
+                        <span>Вместимость от</span>
+                        <input name="capacity" type="number" min="1" placeholder="4">
+                    </label>
+                    <label>
+                        <span>Локация</span>
+                        <input name="location" type="text" placeholder="Москва-Сити">
+                    </label>
+                    <label>
+                        <span>Начало</span>
+                        <input name="start_time" type="datetime-local">
+                    </label>
+                    <label>
+                        <span>Конец</span>
+                        <input name="end_time" type="datetime-local">
+                    </label>
+                    <div class="actions">
+                        <button type="submit">Найти комнаты</button>
+                        <button class="ghost-button" id="resetFiltersButton" type="button">Сбросить</button>
+                    </div>
+                </form>
+                <div class="list-header">
+                    <h3>Доступные комнаты</h3>
+                    <button class="ghost-button" id="refreshRoomsButton" type="button">Обновить</button>
+                </div>
+                <div id="roomsList" class="cards-grid"></div>
+            </section>
+
+            <section class="panel role-panel client-only">
+                <div class="panel-heading">
+                    <h2>Новое бронирование</h2>
+                    <p>Клиент может выбрать комнату и создать новое бронирование.</p>
+                </div>
+                <form id="bookingForm" class="grid-form">
+                    <label>
+                        <span>ID комнаты</span>
+                        <input name="room_id" type="number" min="1" placeholder="1" required>
+                    </label>
+                    <label>
+                        <span>Начало</span>
+                        <input name="start_time" type="datetime-local" required>
+                    </label>
+                    <label>
+                        <span>Конец</span>
+                        <input name="end_time" type="datetime-local" required>
+                    </label>
+                    <div class="actions">
+                        <button type="submit">Забронировать</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="panel role-panel client-only">
+                <div class="list-header">
+                    <div>
+                        <h2>Мои бронирования</h2>
+                        <p>Здесь клиент видит свои активные брони и может их отменять.</p>
+                    </div>
+                    <button class="ghost-button" id="refreshBookingsButton" type="button">Обновить</button>
+                </div>
+                <div id="bookingsList" class="booking-list"></div>
+            </section>
+
+            <section class="panel role-panel admin-only">
+                <div class="panel-heading">
+                    <h2>Управление комнатами</h2>
+                    <p>Администратор может создавать и удалять комнаты.</p>
+                </div>
+                <form id="createRoomForm" class="grid-form">
+                    <label>
+                        <span>Название</span>
+                        <input name="name" type="text" placeholder="North Star" required>
+                    </label>
+                    <label>
+                        <span>Вместимость</span>
+                        <input name="capacity" type="number" min="1" placeholder="8" required>
+                    </label>
+                    <label>
+                        <span>Локация</span>
+                        <input name="location" type="text" placeholder="7 этаж" required>
+                    </label>
+                    <div class="actions">
+                        <button type="submit">Создать комнату</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="panel role-panel admin-only">
+                <div class="list-header">
+                    <div>
+                        <h2>Список комнат</h2>
+                        <p>Администратор видит все комнаты и может удалить ненужные.</p>
+                    </div>
+                    <button class="ghost-button" id="refreshAdminRoomsButton" type="button">Обновить</button>
+                </div>
+                <div id="adminRoomsList" class="cards-grid"></div>
+            </section>
+        </main>
+    </section>
+</div>
+
+<div class="modal-backdrop hidden" id="modalBackdrop"></div>
+
+<section class="modal hidden" id="registerModal" aria-hidden="true">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div>
+                <p class="eyebrow">Регистрация</p>
+                <h2>Создайте аккаунт</h2>
+            </div>
+            <button class="icon-button" data-close-modal="registerModal" type="button">×</button>
+        </div>
+        <form id="registerForm" class="stack">
+            <label>
+                <span>Email</span>
+                <input name="email" type="email" placeholder="user@example.com" required>
+            </label>
+            <label>
+                <span>Пароль</span>
+                <input name="password" type="password" placeholder="Введите пароль" required>
+            </label>
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+    </div>
+</section>
+
+<section class="modal hidden" id="loginModal" aria-hidden="true">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div>
+                <p class="eyebrow">Вход</p>
+                <h2>Войти в аккаунт</h2>
+            </div>
+            <button class="icon-button" data-close-modal="loginModal" type="button">×</button>
+        </div>
+        <form id="loginForm" class="stack">
+            <label>
+                <span>Email</span>
+                <input name="email" type="email" placeholder="user@example.com" required>
+            </label>
+            <label>
+                <span>Пароль</span>
+                <input name="password" type="password" placeholder="Введите пароль" required>
+            </label>
+            <button type="submit">Войти</button>
+        </form>
+    </div>
+</section>
+
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+<script src="/static/app.js" defer></script>
+</body>
+</html>

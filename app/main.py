@@ -2,9 +2,11 @@ import time
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
+from pathlib import Path
 
 from app.core.logging_config import configure_logging
 from app.database import Base, engine
@@ -13,6 +15,7 @@ from app.routers import auth, booking, rooms
 logger = configure_logging()
 
 app = FastAPI()
+static_dir = Path(__file__).resolve().parent / "static"
 
 Base.metadata.create_all(bind=engine)
 
@@ -54,6 +57,7 @@ async def request_logging_middleware(request: Request, call_next):
 app.include_router(auth.router)
 app.include_router(booking.router)
 app.include_router(rooms.router)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 @app.exception_handler(RequestValidationError)
@@ -82,6 +86,11 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 @app.get("/")
 def root():
+    return FileResponse(static_dir / "index.html")
+
+
+@app.get("/api")
+def api_root():
     return {"message": "Booking API"}
 
 
