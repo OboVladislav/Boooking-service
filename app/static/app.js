@@ -163,7 +163,8 @@ function closeActiveModal() {
 
 async function handleRegister(event) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const payload = Object.fromEntries(formData.entries());
 
     await apiRequest("/auth/register", {
@@ -172,7 +173,7 @@ async function handleRegister(event) {
     });
 
     closeActiveModal();
-    event.currentTarget.reset();
+    form.reset();
     showToast("Регистрация завершена. Теперь войдите в аккаунт.", "success");
 }
 
@@ -345,7 +346,8 @@ function renderAdminRooms(rooms) {
 
 async function handleCreateRoom(event) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const payload = {
         name: formData.get("name"),
         capacity: Number(formData.get("capacity")),
@@ -357,7 +359,7 @@ async function handleCreateRoom(event) {
         body: JSON.stringify(payload),
     }, true);
 
-    event.currentTarget.reset();
+    form.reset();
     showToast("Комната создана.", "success");
     await fetchAdminRooms();
 }
