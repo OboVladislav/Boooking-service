@@ -1,10 +1,9 @@
 from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-
 from sqlalchemy.orm import Session
 
-from app.core.jwt import SECRET_KEY, ALGORITHM
+from app.core.config import settings
 from app.database import SessionLocal
 from app.models.user import User
 
@@ -27,7 +26,7 @@ def get_current_user(
     token = credentials.credentials
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         user_id = payload.get("user_id")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")

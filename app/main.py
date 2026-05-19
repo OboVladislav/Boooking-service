@@ -1,29 +1,19 @@
 import time
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import text
-from pathlib import Path
 
 from app.core.logging_config import configure_logging
-from app.database import Base, engine
 from app.routers import auth, booking, rooms
 
 logger = configure_logging()
 
 app = FastAPI()
 static_dir = Path(__file__).resolve().parent / "static"
-
-Base.metadata.create_all(bind=engine)
-
-with engine.begin() as connection:
-    connection.execute(
-        text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR NOT NULL DEFAULT 'user'")
-    )
-
 
 @app.middleware("http")
 async def request_logging_middleware(request: Request, call_next):
