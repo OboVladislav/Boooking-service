@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.booking_rules import can_user_cancel, validate_booking_window
 from app.core.db_safety import safe_commit, safe_flush
-from app.dependencies.auth import get_current_user, get_db
+from app.dependencies.dep import get_current_user, get_db
 from app.models.booking import Booking
 from app.models.booking_audit import BookingAuditLog
 from app.models.room import Room
@@ -21,27 +21,20 @@ router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
 
 def write_audit_log(
-        db: Session,
-        booking_id: int,
-        actor_user_id: int,
-        action: str,
-        payload: dict | None = None
+    db: Session, booking_id: int, actor_user_id: int, action: str, payload: dict | None = None
 ):
     db.add(
         BookingAuditLog(
-            booking_id=booking_id,
-            actor_user_id=actor_user_id,
-            action=action,
-            payload=payload
+            booking_id=booking_id, actor_user_id=actor_user_id, action=action, payload=payload
         )
     )
 
 
 @router.post("/", response_model=BookingResponse)
 def create_booking(
-        booking: BookingCreate,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+    booking: BookingCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     start_utc, end_utc = validate_booking_window(booking.start_time, booking.end_time)
 
@@ -49,18 +42,19 @@ def create_booking(
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
 
-    overlapping_booking = db.query(Booking).filter(
-        Booking.room_id == booking.room_id,
-        and_(Booking.start_time < end_utc, Booking.end_time > start_utc)
-    ).first()
+    overlapping_booking = (
+        db.query(Booking)
+        .filter(
+            Booking.room_id == booking.room_id,
+            and_(Booking.start_time < end_utc, Booking.end_time > start_utc),
+        )
+        .first()
+    )
     if overlapping_booking:
         raise HTTPException(status_code=400, detail="Room already booked in this time range")
 
     db_booking = Booking(
-        room_id=booking.room_id,
-        user_id=current_user.id,
-        start_time=start_utc,
-        end_time=end_utc
+        room_id=booking.room_id, user_id=current_user.id, start_time=start_utc, end_time=end_utc
     )
     db.add(db_booking)
     safe_flush(db, logger, operation="create_booking")
@@ -74,8 +68,8 @@ def create_booking(
             "room_id": db_booking.room_id,
             "user_id": db_booking.user_id,
             "start_time": db_booking.start_time.isoformat(),
-            "end_time": db_booking.end_time.isoformat()
-        }
+            "end_time": db_booking.end_time.isoformat(),
+        },
     )
     safe_commit(db, logger, operation="create_booking")
     db.refresh(db_booking)
@@ -84,17 +78,17 @@ def create_booking(
         "booking created booking_id=%s actor_user_id=%s room_id=%s",
         db_booking.id,
         current_user.id,
-        db_booking.room_id
+        db_booking.room_id,
     )
     return db_booking
 
 
 @router.patch("/{booking_id}", response_model=BookingResponse)
 def update_booking(
-        booking_id: int,
-        payload: BookingUpdate,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+    booking_id: int,
+    payload: BookingUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     db_booking = db.query(Booking).filter(Booking.id == booking_id).first()
     if not db_booking:
@@ -112,7 +106,7 @@ def update_booking(
     old_state = {
         "room_id": db_booking.room_id,
         "start_time": db_booking.start_time.isoformat(),
-        "end_time": db_booking.end_time.isoformat()
+        "end_time": db_booking.end_time.isoformat(),
     }
 
     new_room_id = update_data.get("room_id", db_booking.room_id)
@@ -124,11 +118,15 @@ def update_booking(
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
 
-    overlapping_booking = db.query(Booking).filter(
-        Booking.id != db_booking.id,
-        Booking.room_id == new_room_id,
-        and_(Booking.start_time < end_utc, Booking.end_time > start_utc)
-    ).first()
+    overlapping_booking = (
+        db.query(Booking)
+        .filter(
+            Booking.id != db_booking.id,
+            Booking.room_id == new_room_id,
+            and_(Booking.start_time < end_utc, Booking.end_time > start_utc),
+        )
+        .first()
+    )
     if overlapping_booking:
         raise HTTPException(status_code=400, detail="Room already booked in this time range")
 
@@ -146,9 +144,9 @@ def update_booking(
             "after": {
                 "room_id": db_booking.room_id,
                 "start_time": db_booking.start_time.isoformat(),
-                "end_time": db_booking.end_time.isoformat()
-            }
-        }
+                "end_time": db_booking.end_time.isoformat(),
+            },
+        },
     )
     safe_commit(db, logger, operation="update_booking")
     db.refresh(db_booking)
@@ -159,9 +157,7 @@ def update_booking(
 
 @router.delete("/{booking_id}")
 def cancel_booking(
-        booking_id: int,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+    booking_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     db_booking = db.query(Booking).filter(Booking.id == booking_id).first()
     if not db_booking:
@@ -177,8 +173,7 @@ def cancel_booking(
         booking_start = booking_start.replace(tzinfo=UTC)
     if not is_admin and not can_user_cancel(booking_start):
         raise HTTPException(
-            status_code=400,
-            detail="Cancellation is unavailable less than 1 hour before start"
+            status_code=400, detail="Cancellation is unavailable less than 1 hour before start"
         )
 
     write_audit_log(
@@ -190,8 +185,8 @@ def cancel_booking(
             "room_id": db_booking.room_id,
             "user_id": db_booking.user_id,
             "start_time": db_booking.start_time.isoformat(),
-            "end_time": db_booking.end_time.isoformat()
-        }
+            "end_time": db_booking.end_time.isoformat(),
+        },
     )
     db.delete(db_booking)
     safe_commit(db, logger, operation="cancel_booking")
@@ -202,28 +197,28 @@ def cancel_booking(
 
 @router.get("/{booking_id}/history", response_model=list[BookingAuditResponse])
 def get_booking_history(
-        booking_id: int,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+    booking_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
     is_admin = current_user.role == "admin"
     if booking and booking.user_id != current_user.id and not is_admin:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     if not booking and not is_admin:
-        raise HTTPException(status_code=403, detail="Only admin can view history for cancelled bookings")
+        raise HTTPException(
+            status_code=403, detail="Only admin can view history for cancelled bookings"
+        )
 
-    logs = db.query(BookingAuditLog).filter(
-        BookingAuditLog.booking_id == booking_id
-    ).order_by(BookingAuditLog.changed_at.asc()).all()
+    logs = (
+        db.query(BookingAuditLog)
+        .filter(BookingAuditLog.booking_id == booking_id)
+        .order_by(BookingAuditLog.changed_at.asc())
+        .all()
+    )
     if not logs:
         raise HTTPException(status_code=404, detail="Booking history not found")
     return logs
 
 
 @router.get("/my", response_model=list[BookingResponse])
-def get_my_bookings(
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
-):
+def get_my_bookings(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return db.query(Booking).filter(Booking.user_id == current_user.id).all()

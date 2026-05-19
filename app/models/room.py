@@ -1,15 +1,19 @@
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import relationship
+from typing import TYPE_CHECKING
+
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.booking import Booking
 
 
 class Room(Base):
     __tablename__ = "rooms"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
-    capacity = Column(Integer)
-    location = Column(String)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str | None] = mapped_column(unique=True, index=True)
+    capacity: Mapped[int | None]
+    location: Mapped[str | None]
 
-    bookings = relationship("Booking", back_populates="room")
+    bookings: Mapped[list["Booking"]] = relationship(back_populates="room")

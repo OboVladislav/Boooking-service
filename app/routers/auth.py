@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.db_safety import safe_commit
 from app.core.jwt import create_access_token
 from app.core.security import hash_password, verify_password
-from app.dependencies.auth import get_db
+from app.dependencies.dep import get_db
 from app.models.user import User
 from app.schemas.token import Token
 from app.schemas.user import UserCreate, UserResponse
@@ -26,7 +26,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(
         email=user.email,
         password_hash=hash_password(user.password),
-        role="admin" if is_first_user else "user"
+        role="admin" if is_first_user else "user",
     )
 
     db.add(db_user)
