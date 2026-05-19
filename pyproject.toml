@@ -1,0 +1,50 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["alembic/versions", ".venv", "__pycache__"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes — неиспользуемые импорты/переменные
+    "I",    # isort — порядок импортов
+    "B",    # flake8-bugbear — частые баги
+    "UP",   # pyupgrade — устаревший синтаксис
+    "SIM",  # flake8-simplify — упрощения
+    "C4",   # flake8-comprehensions
+]
+ignore = [
+    "E501",  # line too long — formatter сам разбирается
+]
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/env.py" = ["F401"]
+"app/__init__.py" = ["F401"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.Form",
+    "fastapi.File",
+    "fastapi.Security",
+]
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+python_version = "3.12"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+check_untyped_defs = true
+exclude = ["alembic/versions", ".venv"]
+
+[[tool.mypy.overrides]]
+module = ["jose.*", "passlib.*"]
+ignore_missing_imports = true

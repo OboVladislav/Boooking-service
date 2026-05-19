@@ -19,8 +19,7 @@ def get_db():
 
 
 def get_current_user(
-        credentials: HTTPAuthorizationCredentials = Depends(security),
-        db: Session = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)
 ):
 
     token = credentials.credentials
@@ -28,8 +27,8 @@ def get_current_user(
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         user_id = payload.get("user_id")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError as e:
+        raise HTTPException(status_code=401, detail="Invalid token")  from e
 
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid token payload")
