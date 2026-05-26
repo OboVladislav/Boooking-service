@@ -1,37 +1,84 @@
 # Boooking-service
 
-## Docker
+Сервис бронирования переговорных комнат на FastAPI + PostgreSQL. Регистрация и
+авторизация по JWT, управление комнатами, бронирование с проверкой пересечений
+по времени и журналом изменений каждого бронирования.
 
-Minimum setup uses 2 containers:
-- `api` (FastAPI)
-- `db` (PostgreSQL)
+## Что внутри
 
-Start:
+- **Аутентификация** — регистрация и вход, токены JWT. Первый зарегистрированный
+  пользователь становится `admin`, остальные — `user`.
+- **Комнаты** — создание и удаление (только admin), список с фильтрами по
+  вместимости и расположению, поиск свободных комнат на интервал.
+- **Бронирования** — создание, изменение и отмена. Нельзя забронировать занятый
+  интервал; длительность — от 30 минут до 8 часов; отмена недоступна менее чем
+  за 1 час до начала (для admin ограничения по отмене не действуют).
+- **История** — каждое действие с бронированием пишется в журнал аудита.
+
+## Запуск
+
+Нужен Docker. Переменные окружения задаются в файле `.env` в корне проекта:
+
+```env
+POSTGRES_DB=booking
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=root
+SECRET_KEY=supersecretkey
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+```
+
+Старт (поднимает контейнеры `api` и `db`):
 
 ```bash
 docker compose up --build
 ```
 
-If only application code changed and image rebuild is not needed:
+Если менялся только код приложения и пересборка образа не нужна:
 
 ```bash
 docker compose up
 ```
 
-`docker-compose.yml` now already includes bind mount for `./app` and runs `uvicorn` with `--reload`.
-
-Check:
-- API: `http://localhost:8000/api`
-- Frontend: `http://localhost:8000/`
-
-Stop:
+Остановить:
 
 ```bash
-docker compose down
+docker compose down      # с сохранением данных
+docker compose down -v   # удалить и том БД
 ```
 
-Stop and remove DB volume:
+После запуска доступны:
+
+- API: `http://localhost:8000/api`
+- Документация (Swagger): `http://localhost:8000/docs`
+
+## Использование
+
+1. Зарегистрируйтесь: `POST /auth/register` (первый пользователь — admin).
+2. Войдите: `POST /auth/login` — в ответе придёт `access_token`.
+3. Передавайте токен в защищённые запросы: заголовок `Authorization: Bearer <token>`.
+4. Admin создаёт комнаты: `POST /rooms/`.
+5. Бронируйте: `POST /bookings/` с `room_id`, `start_time`, `end_time`
+   (время — в формате ISO 8601 с указанием таймзоны).
+
+Основные эндпоинты:
+
+| Метод и путь | Назначение |
+|---|---|
+| `POST /auth/register` | Регистрация |
+| `POST /auth/login` | Вход, выдача токена |
+| `GET /rooms/` | Список комнат (фильтры `capacity`, `location`) |
+| `GET /rooms/available` | Свободные комнаты на интервал |
+| `GET /rooms/{id}/availability` | Проверка занятости комнаты |
+| `POST /rooms/` | Создать комнату (admin) |
+| `DELETE /rooms/{id}` | Удалить комнату (admin) |
+| `POST /bookings/` | Создать бронирование |
+| `PATCH /bookings/{id}` | Изменить бронирование |
+| `DELETE /bookings/{id}` | Отменить бронирование |
+| `GET /bookings/my` | Мои бронирования |
+| `GET /bookings/{id}/history` | История изменений бронирования |
+
+## Тесты
 
 ```bash
-docker compose down -v
+pytest -v
 ```
