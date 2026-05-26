@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import JSON, Column, DateTime, Integer, String
+from sqlalchemy import JSON
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
@@ -8,9 +10,9 @@ from app.database import Base
 class BookingAuditLog(Base):
     __tablename__ = "booking_audit_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    booking_id = Column(Integer, index=True, nullable=False)
-    actor_user_id = Column(Integer, index=True, nullable=False)
-    action = Column(String, nullable=False)
-    payload = Column(JSON, nullable=True)
-    changed_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    booking_id: Mapped[int] = mapped_column(index=True)
+    actor_user_id: Mapped[int] = mapped_column(index=True)
+    action: Mapped[str]
+    payload: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    changed_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))

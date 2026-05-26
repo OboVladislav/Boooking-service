@@ -1,18 +1,21 @@
-from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.orm import relationship
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.booking import Booking
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    role = Column(String, nullable=False, default="user")
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(unique=True, index=True)
+    password_hash: Mapped[str]
+    role: Mapped[str] = mapped_column(default="user", server_default="user")
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
-    created_at = Column(DateTime, default=datetime.now(UTC))
-
-    bookings = relationship("Booking", back_populates="user")
+    bookings: Mapped[list["Booking"]] = relationship(back_populates="user")
