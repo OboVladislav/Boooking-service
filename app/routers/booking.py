@@ -199,15 +199,6 @@ def cancel_booking(
 def get_booking_history(
     booking_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
-    booking = db.query(Booking).filter(Booking.id == booking_id).first()
-    is_admin = current_user.role == "admin"
-    if booking and booking.user_id != current_user.id and not is_admin:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    if not booking and not is_admin:
-        raise HTTPException(
-            status_code=403, detail="Only admin can view history for cancelled bookings"
-        )
-
     logs = (
         db.query(BookingAuditLog)
         .filter(BookingAuditLog.booking_id == booking_id)
@@ -216,6 +207,19 @@ def get_booking_history(
     )
     if not logs:
         raise HTTPException(status_code=404, detail="Booking history not found")
+
+    if current_user.role != "admin":
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
+        if booking is not None:
+            is_authorized = booking.user_id == current_user.id
+        else:
+            # booking was cancelled (deleted): let its original creator see the history
+            is_authorized = any(
+                log.action == "created" and log.actor_user_id == current_user.id for log in logs
+            )
+        if not is_authorized:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
+
     return logs
 
 
