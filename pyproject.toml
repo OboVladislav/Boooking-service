@@ -48,3 +48,17 @@ exclude = ["alembic/versions", ".venv"]
 [[tool.mypy.overrides]]
 module = ["jose.*", "passlib.*"]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",                      # показывать причины skip/fail в сводке
+    "--strict-markers",         # ругаться на неизвестные @pytest.mark
+    "--strict-config",
+]
+markers = [
+    "slow: тесты, занимающие больше секунды",
+]
