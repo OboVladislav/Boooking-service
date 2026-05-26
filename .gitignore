@@ -1,1 +1,6 @@
 /.venv/
+python -m pip install -r .\app\requirements.txt
+.env
+__pycache__/
+*.pyc
+.idea/
